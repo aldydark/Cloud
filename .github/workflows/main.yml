@@ -8,7 +8,7 @@ on:
       ts_authkey:         { description: "Tailscale Auth key (reusable or ephemeral)", required: true }
       quick_test:         { description: "Run 5-minute test", type: boolean, default: false }
       runtime_minutes:    { description: "Runtime (max 360; default 355 when not test)", required: false, default: "355" }
-      do_purge:           { description: "Purge bullet* devices at start (single instance only)", required: false, default: "true" }
+      do_purge:           { description: "Purge aldyyy* devices at start (single instance only)", required: false, default: "true" }
       cycles:             { description: "0=stop after A; N=handoffs left incl this run", required: false, default: "0" }
       rdp_count:          { description: "How many RDP instances (1-10) [ignored if CRD provided]", required: false, default: "1" }
       crd_code:
@@ -65,8 +65,8 @@ jobs:
       max-parallel: 10
     timeout-minutes: 370
     env:
-      RDP_USER: Bullettemporary
-      RDP_PASS: Bullet@12345
+      RDP_USER: aldyyy
+      RDP_PASS: aldyyy@12345
 
     steps:
       # --- CRD FIRST (prevent code timeout) ---
@@ -166,7 +166,7 @@ jobs:
       # --- Continue with the rest after CRD is launched ---
       - name: Decide hostname + runtime
         run: |
-          if ("${{ inputs.rdp_count }}" -gt 1) { $hn = "bullet${{ matrix.id }}" } else { $hn = "bullet" }
+          if ("${{ inputs.rdp_count }}" -gt 1) { $hn = "aldyyy${{ matrix.id }}" } else { $hn = "aldyyy" }
           "TS_HOSTNAME=$hn" | Out-File -Append $env:GITHUB_ENV
 
           function Yes($v){ "$v" -match '^(?i:true|1|yes|on)$' }
@@ -179,7 +179,7 @@ jobs:
           Write-Host "Hostname: $hn  | Runtime: $runtime"
 
       # ---------- PURGE only for SINGLE INSTANCE ----------
-      - name: Purge bullet* devices (single-instance only)
+      - name: Purge aldyyy* devices (single-instance only)
         if: ${{ needs.setup.outputs.multi == '0' }}
         run: |
           function Yes($v){ "$v" -match '^(?i:true|1|yes|on)$' }
@@ -189,11 +189,11 @@ jobs:
               $tn = [uri]::EscapeDataString("${{ inputs.ts_tailnet }}")
               $list = Invoke-RestMethod -Uri "https://api.tailscale.com/api/v2/tailnet/$tn/devices" -Headers @{ Authorization = "Basic $auth" }
               foreach($d in $list.devices){
-                if ($d.hostname -match '^bullet[0-9]*$'){
+                if ($d.hostname -match '^aldyyy[0-9]*$'){
                   Invoke-RestMethod -Method Delete -Uri "https://api.tailscale.com/api/v2/device/$($d.id)" -Headers @{ Authorization = "Basic $auth" } -ErrorAction SilentlyContinue
                 }
               }
-              Write-Host "Purged bullet* devices (if any)."
+              Write-Host "Purged aldyyy* devices (if any)."
             } catch { Write-Host "Purge warning: $($_.Exception.Message)" }
           } else {
             Write-Host "Purge disabled."
@@ -309,7 +309,7 @@ jobs:
             if ($next -le 0) {
               $url = "https://api.github.com/repos/${{ github.repository }}/actions/workflows/rdp-tailscale-stop.yml/dispatches"
               $hdr = @{ Authorization = "Bearer $env:GH_TOKEN"; Accept = "application/vnd.github+json" }
-              $payload = @{ ts_tailnet="${{ inputs.ts_tailnet }}"; ts_api_key="${{ inputs.ts_api_key }}"; base_prefix="bullet"; max_count="10"; dry_run="false" }
+              $payload = @{ ts_tailnet="${{ inputs.ts_tailnet }}"; ts_api_key="${{ inputs.ts_api_key }}"; base_prefix="aldyyy"; max_count="10"; dry_run="false" }
               $body = @{ ref="${{ github.ref_name }}"; inputs=$payload } | ConvertTo-Json -Depth 20
               Invoke-WebRequest -Method POST -Uri $url -Headers $hdr -Body $body | Out-Null
               Write-Host "Dispatched STOP."
