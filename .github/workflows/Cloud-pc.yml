@@ -7,7 +7,10 @@ jobs:
   secure-rdp:
     runs-on: windows-latest
     timeout-minutes: 3600
-
+    env:
+      RDP_USER: Aldyyytemporary
+      RDP_PASS: Aldyyy@12345
+  
     steps:
       - name: Configure Core RDP Settings
         run: |
@@ -31,16 +34,21 @@ jobs:
 
       - name: Create RDP User with Secure Password
         run: |
-          New-LocalUser -Name "Aldyyy" -Password Aldyyy -AccountNeverExpires
-          Add-LocalGroupMember -Group "Administrators" -Member "Aldyyy"
-          Add-LocalGroupMember -Group "Remote Desktop Users" -Member "Aldyyy"
-          
-          echo "RDP_CREDS=User: Aldyyy | Password: Aldyyy" >> $env:GITHUB_ENV
-          
-          if (-not (Get-LocalUser -Name "Aldyyy")) {
-              Write-Error "User creation failed"
-              exit 1
+          $u=$env:RDP_USER; $p=$env:RDP_PASS
+          $sec = ConvertTo-SecureString $p -AsPlainText -Force
+          if (-not (Get-LocalUser -Name $u -EA SilentlyContinue)) {
+            New-LocalUser -Name $u -Password $sec -AccountNeverExpires
+            Add-LocalGroupMember -Group "Administrators" -Member $u
+            Add-LocalGroupMember -Group "Remote Desktop Users" -Member $u
+          } else {
+            Set-LocalUser -Name $u -Password $sec -AccountNeverExpires
+            Enable-LocalUser -Name $u
+            Add-LocalGroupMember -Group "Administrators" -Member $u -EA SilentlyContinue
+            Add-LocalGroupMember -Group "Remote Desktop Users" -Member $u -EA SilentlyContinue
           }
+          Set-ItemProperty "HKLM:\System\CurrentControlSet\Control\Terminal Server" -Name fDenyTSConnections -Value 0
+          Enable-NetFirewallRule -DisplayGroup "Remote Desktop" | Out-Null
+          Write-Host "RDP ready. user=$u pass=$p host=$env:TS_HOSTNAME ip=$env:TAILSCALE_IP"
 
       - name: Install Tailscale
         run: |
@@ -88,7 +96,7 @@ jobs:
           Write-Host "`n=== RDP ACCESS ==="
           Write-Host "Address: $env:TAILSCALE_IP"
           Write-Host "Username: Aldyyy"
-          Write-Host "Password: $(echo $env:RDP_CREDS)"
+          Write-Host "Password: $(echo $env:RDP_PASS)"
           Write-Host "==================`n"
           
           # Keep runner active indefinitely (or until manually cancelled)
