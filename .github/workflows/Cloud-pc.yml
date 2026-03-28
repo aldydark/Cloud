@@ -5,7 +5,7 @@ on:
 
 jobs:
   secure-rdp:
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
     env:
       RDP_USER: Aldyyytemporary
       RDP_PASS: Aldyyy@12345
